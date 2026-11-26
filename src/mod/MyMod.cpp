@@ -1,71 +1,34 @@
-#include "mod/MyMod.h"
+#include <preload/Mod.h>
+#include <preload/Logger.h>
 
-#include <filesystem>
-
-#include <pl/Mod.hpp>
-
-namespace clange_me {
-
-ClangeMeMod &ClangeMeMod::instance() {
-    static ClangeMeMod instance;
-    return instance;
-}
-
-ClangeMeMod::ClangeMeMod() : mSelf(*ll::mod::NativeMod::current()) {}
-
-bool ClangeMeMod::load() {
-    auto &self = getSelf();
-    self.getLogger().debug("Loading...");
-
-    std::error_code ec;
-    std::filesystem::create_directories(self.getDataDir(), ec);
-    if (ec) {
-        self.getLogger().error("Failed to create data directory {}: {}", self.getDataDir().string(),
-                               ec.message());
-        return false;
+class MyMod {
+public:
+    static MyMod &instance() {
+        static MyMod instance;
+        return instance;
     }
 
-    std::filesystem::create_directories(self.getConfigDir(), ec);
-    if (ec) {
-        self.getLogger().error("Failed to create config directory {}: {}",
-                               self.getConfigDir().string(), ec.message());
-        return false;
-    }
+    MyMod() : mSelf(*ll::mod::NativeMod::current()) {}
 
-    mConfigFile.emplace();
-    if (!mConfigFile->load()) {
-        self.getLogger().warn("Failed to load typed config");
-        return false;
-    }
-    mConfig = mConfigFile->value();
+    [[nodiscard]] ll::mod::NativeMod &getSelf() const { return mSelf; }
 
-    self.getLogger().info("Loaded {} from {}", self.getName(), self.getModDir().string());
-    return true;
-}
-
-bool ClangeMeMod::enable() {
-    auto &self = getSelf();
-    self.getLogger().debug("Enabling...");
-    if (!mConfig.enabled) {
-        self.getLogger().info("clange_me is disabled by config");
+    bool load() {
+        getSelf().getLogger().info("LumaLight mobile mod loaded successfully!");
         return true;
     }
 
-    self.getLogger().info("Config message: {}", mConfig.message);
-    return true;
-}
+    bool enable() {
+        getSelf().getLogger().info("LumaLight graphics hook enabled!");
+        // Shader and outline rendering hooks initialize here
+        return true;
+    }
 
-bool ClangeMeMod::disable() {
-    getSelf().getLogger().debug("Disabling...");
-    // Undo enable-time state here.
-    return true;
-}
+    bool disable() {
+        return true;
+    }
 
-bool ClangeMeMod::unload() {
-    getSelf().getLogger().debug("Unloading...");
-    // Release load-time resources here.
-    mConfigFile.reset();
-    return true;
-}
+private:
+    ll::mod::NativeMod &mSelf;
+};
 
-} // namespace clange_me
+PL_REGISTER_MOD(MyMod, MyMod::instance())
